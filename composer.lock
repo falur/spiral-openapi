@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ffb35ce34400337c1e707aaf8a472e4e",
+    "content-hash": "3993b7db9db088808b3a06620d780b91",
     "packages": [
         {
             "name": "brick/math",
@@ -4059,30 +4059,7 @@
                     "GianTiaga\\PhpStanStrictRules\\": "src"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "GianTiaga\\PhpStanStrictRules\\Tests\\": "tests"
-                }
-            },
-            "scripts": {
-                "cs": [
-                    "php-cs-fixer check --diff"
-                ],
-                "cs:fix": [
-                    "php-cs-fixer fix"
-                ],
-                "phpstan": [
-                    "vendor/bin/phpstan analyse --memory-limit=1G"
-                ],
-                "test": [
-                    "vendor/bin/phpunit"
-                ],
-                "qa": [
-                    "@cs",
-                    "@phpstan",
-                    "@test"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],

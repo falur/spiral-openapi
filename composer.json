@@ -34,12 +34,6 @@
             "GianTiaga\\SpiralOpenApi\\Tests\\": "tests"
         }
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/falur/phpstan-strict-rules"
-        }
-    ],
     "scripts": {
         "cs": "php-cs-fixer check --diff",
         "cs:fix": "php-cs-fixer fix",
