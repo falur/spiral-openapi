@@ -1,0 +1,22 @@
+parameters:
+    # Требовать ли тег группы у каждого маршрута схемы.
+    #
+    # По умолчанию выключено: пакет не знает, как проект группирует операции, и без явного
+    # решения ничего не требует. Своё значение объявляет каждый проект в собственном
+    # `phpstan.neon`.
+    requireOpenApiTag: false
+
+parametersSchema:
+    requireOpenApiTag: bool()
+
+services:
+    -
+        class: GianTiaga\SpiralOpenApi\PHPStan\Rules\OpenApiAttributeRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: GianTiaga\SpiralOpenApi\PHPStan\Rules\RequireOpenApiTagRule
+        arguments:
+            required: %requireOpenApiTag%
+        tags:
+            - phpstan.rules.rule

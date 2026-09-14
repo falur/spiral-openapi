@@ -1,0 +1,54 @@
+# Блокирующие проверки пакета.
+#
+# Набор тот же, что и на машине разработчика: стиль кода, статический анализ и тесты. Своей
+# конфигурации, порогов и ослабленных флагов у CI нет — он вызывает те же команды Composer.
+name: Проверки
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    name: Блокирующие проверки
+    runs-on: ubuntu-latest
+    # Проверки пакета занимают меньше минуты. Ограничение нужно только для того, чтобы
+    # зависший запуск не держал очередь до стандартных шести часов.
+    timeout-minutes: 15
+
+    steps:
+      - name: Получить исходники
+        uses: actions/checkout@v4
+
+      - name: Поставить PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: intl, mbstring, tokenizer, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Взять зависимости Composer из кэша
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Установить зависимости
+        run: composer install --no-interaction --no-progress
+
+      - name: Стиль кода
+        run: composer cs
+
+      - name: Статический анализ
+        run: composer phpstan
+
+      - name: Тесты
+        run: composer test

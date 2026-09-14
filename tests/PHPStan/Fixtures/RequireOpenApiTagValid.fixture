@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace GianTiaga\SpiralOpenApi\Tests\PHPStan\Fixtures;
+
+use GianTiaga\SpiralOpenApi\Attribute\OpenApi;
+use GianTiaga\SpiralOpenApi\Attribute\OpenApiTag;
+use Spiral\Router\Annotation\Route;
+
+final class RequireOpenApiTagValid
+{
+    #[OpenApiTag('Клиенты')]
+    #[Route(route: '/api/v1/clients', name: 'api.v1.clients.index', methods: ['GET'])]
+    public function taggedRoute(): void {}
+
+    #[OpenApi(ignore: true)]
+    #[Route(route: '/api/v1/docs', name: 'api.v1.docs', methods: ['GET'])]
+    public function routeOutsideSchema(): void {}
+
+    public function methodWithoutRoute(): void {}
+}

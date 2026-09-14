@@ -1,0 +1,18 @@
+<?php
+
+declare(strict_types=1);
+
+namespace GianTiaga\SpiralOpenApi\Tests\PHPStan\Fixtures;
+
+use GianTiaga\SpiralOpenApi\Attribute\OpenApi;
+use Spiral\Router\Annotation\Route;
+
+final class RequireOpenApiTagInvalid
+{
+    #[Route(route: '/api/v1/clients', name: 'api.v1.clients.index', methods: ['GET'])]
+    public function routeWithoutTag(): void {}
+
+    #[OpenApi(id: 'clients_show')]
+    #[Route(route: '/api/v1/clients/<clientId>', name: 'api.v1.clients.show', methods: ['GET'])]
+    public function routeInSchemaWithoutTag(): void {}
+}
