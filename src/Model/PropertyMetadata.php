@@ -10,6 +10,11 @@ final readonly class PropertyMetadata
     public const string SOURCE_PATH = 'path';
     public const string SOURCE_BODY = 'body';
     public const string SOURCE_DATA = 'data';
+    /**
+     * Загружаемый файл из bag `files` запроса. Поле такого источника описывается двоичной строкой,
+     * а операция с ним принимает тело `multipart/form-data`: файл в `application/json` не передаётся.
+     */
+    public const string SOURCE_FILE = 'file';
     public const string SOURCE_NONE = 'none';
     /**
      * @param list<string> $unionTypes Классы-члены union-типа свойства (для oneOf). Пусто, если тип не

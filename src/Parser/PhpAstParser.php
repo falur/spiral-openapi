@@ -414,6 +414,9 @@ final readonly class PhpAstParser
                 if (\str_ends_with(haystack: $attributeName, needle: '\Post')) {
                     return PropertyMetadata::SOURCE_BODY;
                 }
+                if (\str_ends_with(haystack: $attributeName, needle: '\File')) {
+                    return PropertyMetadata::SOURCE_FILE;
+                }
                 if (\str_ends_with(haystack: $attributeName, needle: '\Data') || \str_ends_with(haystack: $attributeName, needle: '\NestedFilter')) {
                     return PropertyMetadata::SOURCE_DATA;
                 }

@@ -12,6 +12,7 @@ use GianTiaga\SpiralOpenApi\Model\ClassMetadata;
 use GianTiaga\SpiralOpenApi\Model\MethodMetadata;
 use GianTiaga\SpiralOpenApi\Model\OperationSecurity;
 use GianTiaga\SpiralOpenApi\Model\PropertyMetadata;
+use GianTiaga\SpiralOpenApi\Response\Enum\ContentType;
 use GianTiaga\SpiralOpenApi\Schema\NullableSchema;
 use GianTiaga\SpiralOpenApi\Schema\SchemaBuilder;
 use GianTiaga\SpiralOpenApi\Schema\SchemaRegistry;
@@ -312,19 +313,29 @@ final readonly class SpecBuilder
         return $parameters;
     }
     /**
+     * Тело запроса операции.
+     *
+     * Вид тела задаёт сам Filter: поле загружаемого файла передаётся только формой, поэтому
+     * операция с таким полем принимает `multipart/form-data`, а остальные поля этого Filter
+     * остаются в той же форме обычными полями. Filter без файла по-прежнему даёт
+     * `application/json`.
+     *
      * @param array<string, ClassMetadata> $classesByName
      * @return null|array<string, mixed>
      */
     private function requestBody(MethodMetadata $methodMetadata, SchemaBuilder $schemaBuilder, array $classesByName): array|null
     {
         $bodyProperties = [...$this->filterProperties(methodMetadata: $methodMetadata, source: PropertyMetadata::SOURCE_BODY, classesByName: $classesByName), ...$this->filterProperties(methodMetadata: $methodMetadata, source: PropertyMetadata::SOURCE_DATA, classesByName: $classesByName)];
-        if ($bodyProperties === []) {
+        $fileProperties = $this->filterProperties(methodMetadata: $methodMetadata, source: PropertyMetadata::SOURCE_FILE, classesByName: $classesByName);
+        if ($bodyProperties === [] && $fileProperties === []) {
             return null;
         }
         $properties = [];
         $required = [];
-        foreach ($bodyProperties as $propertyMetadata) {
-            $properties[$propertyMetadata->name] = $schemaBuilder->schemaForProperty($propertyMetadata);
+        foreach ([...$bodyProperties, ...$fileProperties] as $propertyMetadata) {
+            $properties[$propertyMetadata->name] = $propertyMetadata->source === PropertyMetadata::SOURCE_FILE
+                ? $this->fileSchema()
+                : $schemaBuilder->schemaForProperty($propertyMetadata);
             if ($propertyMetadata->isRequired()) {
                 $required[] = $propertyMetadata->name;
             }
@@ -353,7 +364,21 @@ final readonly class SpecBuilder
         if ($requestBodyMetadata?->additionalProperties !== null) {
             $schema['additionalProperties'] = $requestBodyMetadata->additionalProperties;
         }
-        return ['required' => true, 'content' => ['application/json' => ['schema' => $schemaBuilder->referenceForSchema(schemaName: $this->requestBodySchemaName(methodMetadata: $methodMetadata, classesByName: $classesByName), schema: $schema)]]];
+        $mediaType = $fileProperties === [] ? 'application/json' : ContentType::MultipartFormData->value;
+        return ['required' => true, 'content' => [$mediaType => ['schema' => $schemaBuilder->referenceForSchema(schemaName: $this->requestBodySchemaName(methodMetadata: $methodMetadata, classesByName: $classesByName), schema: $schema)]]];
+    }
+    /**
+     * Схема поля загружаемого файла.
+     *
+     * Двоичная строка — единственная форма файла в OpenAPI, и ограничения `OpenApiProperty`
+     * к ней не применяются: длину и образец задают не байтам файла. Необязательность поля
+     * выражает перечень `required` тела, а не обнуляемый тип.
+     *
+     * @return array<string, string>
+     */
+    private function fileSchema(): array
+    {
+        return ['type' => 'string', 'format' => 'binary'];
     }
     /**
      * Имя схемы тела запроса.
@@ -373,7 +398,7 @@ final readonly class SpecBuilder
                 continue;
             }
             foreach ($classMetadata->properties as $propertyMetadata) {
-                if ($propertyMetadata->source !== PropertyMetadata::SOURCE_BODY && $propertyMetadata->source !== PropertyMetadata::SOURCE_DATA) {
+                if ($propertyMetadata->source !== PropertyMetadata::SOURCE_BODY && $propertyMetadata->source !== PropertyMetadata::SOURCE_DATA && $propertyMetadata->source !== PropertyMetadata::SOURCE_FILE) {
                     continue;
                 }
                 $shortNames[$classMetadata->shortName] = true;

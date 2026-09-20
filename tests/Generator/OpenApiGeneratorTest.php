@@ -220,6 +220,41 @@ final class OpenApiGeneratorTest extends TestCase
                 ->value(key: 'minLength'),
         );
     }
+    public function testFileFieldGeneratesMultipartRequestBody(): void
+    {
+        $outputFile = __DIR__ . '/../../runtime/openapi-fixture-multipart.yml';
+        $result = (new OpenApiGenerator(translator: self::englishTranslator()))->generate(new OpenApiGeneratorConfig(projectRoot: __DIR__ . '/../..', sourcePaths: [__DIR__ . '/../Fixtures/Endpoint/Multipart/Api/V1'], apiNamespace: 'GianTiaga\SpiralOpenApi\Tests\Fixtures\Endpoint\Multipart\Api\V1', routePrefix: '/api/v1', outputFile: $outputFile, title: 'Fixture API', version: '1.0.0', responseWrapperMapping: new ResponseWrapperMapping(dataResponseClass: DataResponse::class, collectionResponseClass: CollectionResponse::class, paginationResponseClass: PaginationResponse::class, errorResponseClass: ErrorResponse::class, emptyResponseClass: EmptySuccessResponse::class)));
+        self::assertSame(2, $result->operationCount);
+        self::assertFileExists($outputFile);
+        $spec = Yaml::parseFile($outputFile);
+        self::assertIsArray($spec);
+        $specNode = new OpenApiSpecNode(value: $spec);
+        $uploadRequestBody = $specNode->child(key: 'paths')->child(key: '/documents')->child(key: 'post')->child(key: 'requestBody');
+        // Операция с полем файла объявляет форму, а не JSON: файл в application/json не передаётся.
+        $uploadContent = $uploadRequestBody->child(key: 'content');
+        self::assertTrue($uploadContent->has(key: 'multipart/form-data'));
+        self::assertFalse($uploadContent->has(key: 'application/json'));
+        self::assertTrue($uploadRequestBody->value(key: 'required'));
+        // Тело формы описано схемой компонентов по имени Filter, как и тело JSON.
+        self::assertSame(
+            '#/components/schemas/DocumentUploadFilter',
+            $uploadContent->child(key: 'multipart/form-data')->child(key: 'schema')->value(key: '$ref'),
+        );
+        $uploadSchema = $specNode->child(key: 'components')->child(key: 'schemas')->child(key: 'DocumentUploadFilter');
+        $uploadProperties = $uploadSchema->child(key: 'properties');
+        // Поле файла — двоичная строка, соседние поля того же Filter остаются обычными полями формы.
+        self::assertSame(['type' => 'string', 'format' => 'binary'], $uploadProperties->value(key: 'file'));
+        self::assertSame('string', $uploadProperties->child(key: 'clientId')->value(key: 'type'));
+        self::assertSame('uuid', $uploadProperties->child(key: 'clientId')->value(key: 'format'));
+        $uploadRequired = $uploadSchema->value(key: 'required');
+        self::assertIsArray($uploadRequired);
+        self::assertContains('file', $uploadRequired);
+        self::assertContains('clientId', $uploadRequired);
+        // Операция без поля файла собирается по-прежнему как application/json.
+        $renameContent = $specNode->child(key: 'paths')->child(key: '/documents/{documentId}')->child(key: 'patch')->child(key: 'requestBody')->child(key: 'content');
+        self::assertTrue($renameContent->has(key: 'application/json'));
+        self::assertFalse($renameContent->has(key: 'multipart/form-data'));
+    }
     public function testConfigurableAccessAttributesGenerateBearerSecurity(): void
     {
         $outputFile = __DIR__ . '/../../runtime/openapi-fixture-security.yml';

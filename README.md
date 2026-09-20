@@ -246,6 +246,22 @@ final class UpdateUserFilter
 `additionalProperties: false` не позволяет неизвестному полю сделать пустой PATCH формально
 валидным.
 
+Загрузка файла объявляется свойством Filter с атрибутом `#[File]` — отдельного аргумента для
+этого нет:
+
+```php
+#[File]
+#[OpenApiProperty(nullable: false)]
+public UploadedFileInterface|null $file;
+
+#[Post]
+public string $clientId;
+```
+
+Операция с таким свойством получает тело `multipart/form-data`, само свойство описывается как
+`type: string, format: binary`, а остальные свойства того же Filter остаются в этой форме
+обычными полями. Операция без свойства файла по-прежнему собирается как `application/json`.
+
 Чтобы Spiral отдавал response DTO как HTTP-ответы, подключите interceptor:
 
 ```php
