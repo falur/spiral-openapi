@@ -368,6 +368,7 @@ final class OpenApiGeneratorTest extends TestCase
         self::assertTrue($schemas->has(key: 'HealthResource'));
         self::assertTrue($schemas->has(key: 'UserResource'));
         self::assertTrue($schemas->has(key: 'ErrorResponse'));
+        $this->assertErrorResponseDescribesValidationErrors($schemas);
         $this->assertSuccessResponseReferencesComponentSchema(operation: $healthGet, schemaName: 'HealthResourceDataResponse', schemas: $schemas);
         $this->assertSuccessResponseReferencesComponentSchema(operation: $usersGet, schemaName: 'UserResourceCollectionResponse', schemas: $schemas);
         self::assertSame(
@@ -383,6 +384,21 @@ final class OpenApiGeneratorTest extends TestCase
         // иначе схема получила бы две операции с одним operationId.
         self::assertFalse($healthPath->has(key: 'head'));
         $this->assertUserResourceNullableSchema(schemas: $schemas);
+    }
+    /**
+     * Ответ об ошибке несёт разбор по полям, и схема обязана его описывать: иначе клиент видит у
+     * 422 только общий текст, а `errors` разбирает наугад.
+     */
+    private function assertErrorResponseDescribesValidationErrors(OpenApiSpecNode $schemas): void
+    {
+        $properties = $schemas->child(key: 'ErrorResponse')->child(key: 'properties');
+        self::assertTrue($properties->has(key: 'errors'));
+        self::assertSame(
+            ['type' => 'array', 'items' => ['type' => 'object', 'properties' => ['field' => ['type' => 'string'], 'messages' => ['type' => 'array', 'items' => ['type' => 'string']]], 'required' => ['field', 'messages']]],
+            $properties->value(key: 'errors'),
+        );
+        // Разбор по полям приходит не у каждой ошибки, поэтому обязателен только общий текст.
+        self::assertSame(['message'], $schemas->child(key: 'ErrorResponse')->value(key: 'required'));
     }
     private function assertUserResourceNullableSchema(OpenApiSpecNode $schemas): void
     {

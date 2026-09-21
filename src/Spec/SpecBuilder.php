@@ -270,13 +270,21 @@ final readonly class SpecBuilder
         $mediaType = \strstr(haystack: $contentType, needle: ';', before_needle: true);
         return $mediaType === false ? $contentType : $mediaType;
     }
+    /**
+     * Схема ответа об ошибке.
+     *
+     * `errors` описан здесь же и необязателен: разбор запроса добавляет его к тем же `message` и
+     * `code`, перечисляя каждое отклонённое поле. Без него в схеме клиент видел бы у ответа 422
+     * только общий текст, а разбор поля искал бы наугад. Адрес поля идёт через точку, включая
+     * поле вложенного объекта, а сообщения поля — всегда список строк.
+     */
     private function ensureErrorResponseSchema(SchemaRegistry $schemaRegistry, OpenApiGeneratorConfig $config, NullableSchema $nullableSchema): void
     {
         $schemaName = $this->shortName(className: $config->responseWrapperMapping->errorResponseClass);
         if ($schemaRegistry->has($schemaName)) {
             return;
         }
-        $schemaRegistry->add(schemaName: $schemaName, schema: ['type' => 'object', 'properties' => ['message' => ['type' => 'string'], 'code' => $nullableSchema->makeNullable(['type' => 'integer'])], 'required' => ['message']]);
+        $schemaRegistry->add(schemaName: $schemaName, schema: ['type' => 'object', 'properties' => ['message' => ['type' => 'string'], 'code' => $nullableSchema->makeNullable(['type' => 'integer']), 'errors' => ['type' => 'array', 'items' => ['type' => 'object', 'properties' => ['field' => ['type' => 'string'], 'messages' => ['type' => 'array', 'items' => ['type' => 'string']]], 'required' => ['field', 'messages']]]], 'required' => ['message']]);
     }
     /**
      * @return array<string, string>
