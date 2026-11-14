@@ -17,6 +17,7 @@ use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\ParserFactory;
 use GianTiaga\SpiralOpenApi\Exception\OpenApiGenerationException;
 use GianTiaga\SpiralOpenApi\Model\AdditionalResponseMetadata;
+use GianTiaga\SpiralOpenApi\Model\ResponseHeaderMetadata;
 use GianTiaga\SpiralOpenApi\Model\ClassMetadata;
 use GianTiaga\SpiralOpenApi\Model\FileResponseMetadata;
 use GianTiaga\SpiralOpenApi\Model\MethodMetadata;
@@ -177,6 +178,7 @@ final readonly class PhpAstParser
                     array: $this->attributes($method),
                 ),
                 tag: $this->parseTag(method: $method),
+                responseHeaders: $this->parseResponseHeaders($method),
             );
         }
         return $methods;
@@ -368,6 +370,23 @@ final readonly class PhpAstParser
         }
         return $additionalResponses;
     }
+    /** @return list<ResponseHeaderMetadata> */
+    private function parseResponseHeaders(Stmt\ClassMethod $method): array
+    {
+        $headers = [];
+        foreach ($this->attributes($method) as $attribute) {
+            if (!$this->attributeIs(attribute: $attribute, className: 'GianTiaga\SpiralOpenApi\Attribute\OpenApiResponseHeader')) {
+                continue;
+            }
+            $headers[] = new ResponseHeaderMetadata(
+                status: $this->httpStatusArgument(attribute: $attribute, name: 'status', position: 0),
+                name: $this->stringArgument(attribute: $attribute, name: 'name', position: 1, default: ''),
+                description: $this->stringArgument(attribute: $attribute, name: 'description', position: 2, default: ''),
+                value: $this->nullableStringArgument(attribute: $attribute, name: 'value', position: 3),
+            );
+        }
+        return $headers;
+    }
     /**
      * @return list<int>
      */
@@ -405,6 +424,9 @@ final readonly class PhpAstParser
         foreach ($attributeGroups as $attributeGroup) {
             foreach ($attributeGroup->attrs as $attribute) {
                 $attributeName = $this->resolvedName($attribute->name);
+                if (\str_ends_with(haystack: $attributeName, needle: '\Header')) {
+                    return PropertyMetadata::SOURCE_HEADER;
+                }
                 if (\str_ends_with(haystack: $attributeName, needle: '\Query')) {
                     return PropertyMetadata::SOURCE_QUERY;
                 }

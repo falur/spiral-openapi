@@ -318,6 +318,28 @@ final class OpenApiGeneratorTest extends TestCase
         $this->expectExceptionMessage('Каталог исходного кода API не найден');
         (new OpenApiGenerator(translator: self::englishTranslator()))->generate($this->generatorConfig(outputFile: __DIR__ . '/../../runtime/openapi-glob-missing.yml', sourcePaths: [__DIR__ . '/../Fixtures/*/Missing/Endpoint']));
     }
+    public function testRequestAndResponseHeadersAreDeclaredAndRegenerate(): void
+    {
+        $outputFile = __DIR__ . '/../../runtime/openapi-headers.yml';
+        $config = new OpenApiGeneratorConfig(projectRoot: __DIR__ . '/../..', sourcePaths: [__DIR__ . '/../Fixtures/Endpoint/Headers/Api/V1'], apiNamespace: 'GianTiaga\SpiralOpenApi\Tests\Fixtures\Endpoint\Headers\Api\V1', routePrefix: '/api/v1', outputFile: $outputFile, title: 'Headers', version: '1.0.0', responseWrapperMapping: new ResponseWrapperMapping(dataResponseClass: DataResponse::class, collectionResponseClass: CollectionResponse::class, paginationResponseClass: PaginationResponse::class, errorResponseClass: ErrorResponse::class, emptyResponseClass: EmptySuccessResponse::class));
+        $generator = new OpenApiGenerator(translator: self::englishTranslator());
+        $generator->generate($config);
+        $first = \file_get_contents($outputFile);
+        $generator->generate($config);
+        self::assertSame($first, \file_get_contents($outputFile));
+        $operation = (new OpenApiSpecNode(Yaml::parseFile($outputFile)))->child(key: 'paths')->child(key: '/placement')->child(key: 'post');
+        $parameters = $operation->child(key: 'parameters');
+        $required = $parameters->child(key: 0);
+        self::assertSame('Idempotency-Key', $required->value(key: 'name'));
+        self::assertSame('header', $required->value(key: 'in'));
+        self::assertTrue($required->value(key: 'required'));
+        self::assertSame('uuid', $required->child(key: 'schema')->value(key: 'format'));
+        self::assertFalse($parameters->child(key: 1)->value(key: 'required'));
+        self::assertFalse($operation->has(key: 'requestBody'));
+        $responses = $operation->child(key: 'responses');
+        self::assertSame(['true'], $responses->child(key: 201)->child(key: 'headers')->child(key: 'Idempotent-Replayed')->child(key: 'schema')->value(key: 'enum'));
+        self::assertSame(['1'], $responses->child(key: 409)->child(key: 'headers')->child(key: 'Retry-After')->child(key: 'schema')->value(key: 'enum'));
+    }
     /**
      * @param list<string> $sourcePaths
      */

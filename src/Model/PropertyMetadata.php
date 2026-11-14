@@ -7,6 +7,7 @@ namespace GianTiaga\SpiralOpenApi\Model;
 final readonly class PropertyMetadata
 {
     public const string SOURCE_QUERY = 'query';
+    public const string SOURCE_HEADER = 'header';
     public const string SOURCE_PATH = 'path';
     public const string SOURCE_BODY = 'body';
     public const string SOURCE_DATA = 'data';
