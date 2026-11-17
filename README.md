@@ -354,3 +354,9 @@ composer install
 composer test
 composer phpstan
 ```
+
+### Заголовки запросов и ответов
+
+Поле Filter с `#[Header(key: 'Idempotency-Key')]` описывается как header-параметр. Обязательность определяется типом и отсутствием default, формат задаёт `#[OpenApiProperty(format: 'uuid')]`. Такое поле не попадает в requestBody.
+
+Заголовок ответа объявляется на методе через повторяемый `#[OpenApiResponseHeader(status: HttpStatus::Created, name: 'Idempotent-Replayed', description: 'Только при повторе.', value: 'true')]`. Код ответа должен быть объявлен самой операцией; значение заголовка описывается строкой.

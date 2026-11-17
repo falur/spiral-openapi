@@ -161,6 +161,31 @@ final readonly class SpecBuilder
         }
         // Union (+) сохраняет числовой ключ кода ответа (200/204); spread [...$successResponses] переиндексировал бы его в 0.
         $operation['responses'] = $successResponses + $additionalResponses + $errorResponses + ['default' => $errorResponse];
+        $responseHeaders = [];
+        $responseHeaderNames = [];
+        foreach ($methodMetadata->responseHeaders as $header) {
+            if (!isset($operation['responses'][$header->status])) {
+                throw new OpenApiGenerationException(\sprintf('Для заголовка %s не объявлен ответ %d.', $header->name, $header->status));
+            }
+            $normalizedName = \strtolower($header->name);
+            if (isset($responseHeaderNames[$header->status][$normalizedName])) {
+                throw new OpenApiGenerationException(\sprintf('Заголовок ответа %s для кода %d объявлен у операции %s::%s дважды.', $header->name, $header->status, $classMetadata->className, $methodMetadata->name));
+            }
+            $responseHeaderNames[$header->status][$normalizedName] = true;
+            $schema = ['type' => 'string'];
+            if ($header->value !== null) {
+                $schema['enum'] = [$header->value];
+            }
+            $responseHeaders[$header->status][$header->name] = ['description' => $header->description, 'schema' => $schema];
+        }
+        foreach ($responseHeaders as $status => $headers) {
+            $response = $operation['responses'][$status];
+            if (!\is_array($response)) {
+                throw new OpenApiGenerationException('Ответ операции должен быть объектом схемы.');
+            }
+            $response['headers'] = $headers;
+            $operation['responses'][$status] = $response;
+        }
         $requestBody = $this->requestBody(methodMetadata: $methodMetadata, schemaBuilder: $schemaBuilder, classesByName: $classesByName);
         if ($requestBody !== null) {
             $operation['requestBody'] = $requestBody;
@@ -317,6 +342,9 @@ final readonly class SpecBuilder
         }
         foreach ($this->filterProperties(methodMetadata: $methodMetadata, source: PropertyMetadata::SOURCE_QUERY, classesByName: $classesByName) as $propertyMetadata) {
             $parameters[] = ['name' => $this->queryParameterName($propertyMetadata), 'in' => 'query', 'required' => $propertyMetadata->isRequired(), 'schema' => $schemaBuilder->schemaForProperty($propertyMetadata)];
+        }
+        foreach ($this->filterProperties(methodMetadata: $methodMetadata, source: PropertyMetadata::SOURCE_HEADER, classesByName: $classesByName) as $propertyMetadata) {
+            $parameters[] = ['name' => $propertyMetadata->name, 'in' => 'header', 'required' => $propertyMetadata->isRequired(), 'schema' => $schemaBuilder->schemaForProperty($propertyMetadata)];
         }
         return $parameters;
     }
