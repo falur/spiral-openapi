@@ -14,7 +14,7 @@
 ## Установка
 
 ```bash
-composer require gian-tiaga/spiral-openapi:^0.1.0
+composer require gian-tiaga/spiral-openapi:^0.3.0
 ```
 
 ## Bootloader
