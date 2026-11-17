@@ -378,9 +378,13 @@ final readonly class PhpAstParser
             if (!$this->attributeIs(attribute: $attribute, className: 'GianTiaga\SpiralOpenApi\Attribute\OpenApiResponseHeader')) {
                 continue;
             }
+            $name = $this->stringArgument(attribute: $attribute, name: 'name', position: 1, default: '');
+            if (\trim($name) === '') {
+                throw new OpenApiGenerationException('Заголовок ответа требует непустой аргумент name.');
+            }
             $headers[] = new ResponseHeaderMetadata(
                 status: $this->httpStatusArgument(attribute: $attribute, name: 'status', position: 0),
-                name: $this->stringArgument(attribute: $attribute, name: 'name', position: 1, default: ''),
+                name: $name,
                 description: $this->stringArgument(attribute: $attribute, name: 'description', position: 2, default: ''),
                 value: $this->nullableStringArgument(attribute: $attribute, name: 'value', position: 3),
             );

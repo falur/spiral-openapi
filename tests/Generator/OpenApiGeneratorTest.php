@@ -318,6 +318,18 @@ final class OpenApiGeneratorTest extends TestCase
         $this->expectExceptionMessage('Каталог исходного кода API не найден');
         (new OpenApiGenerator(translator: self::englishTranslator()))->generate($this->generatorConfig(outputFile: __DIR__ . '/../../runtime/openapi-glob-missing.yml', sourcePaths: [__DIR__ . '/../Fixtures/*/Missing/Endpoint']));
     }
+    public function testEmptyResponseHeaderFailsGeneration(): void
+    {
+        $this->expectException(OpenApiGenerationException::class);
+        $this->expectExceptionMessage('Заголовок ответа требует непустой аргумент name.');
+        (new OpenApiGenerator(translator: self::englishTranslator()))->generate(new OpenApiGeneratorConfig(projectRoot: __DIR__ . '/../..', sourcePaths: [__DIR__ . '/../Fixtures/Endpoint/EmptyResponseHeader/Api/V1'], apiNamespace: 'GianTiaga\SpiralOpenApi\Tests\Fixtures\Endpoint\EmptyResponseHeader\Api\V1', routePrefix: '/api/v1', outputFile: __DIR__ . '/../../runtime/openapi-EmptyResponseHeader.yml', title: 'Headers', version: '1.0.0', responseWrapperMapping: new ResponseWrapperMapping(dataResponseClass: DataResponse::class, collectionResponseClass: CollectionResponse::class, paginationResponseClass: PaginationResponse::class, errorResponseClass: ErrorResponse::class, emptyResponseClass: EmptySuccessResponse::class)));
+    }
+    public function testDuplicateResponseHeaderFailsGeneration(): void
+    {
+        $this->expectException(OpenApiGenerationException::class);
+        $this->expectExceptionMessage('Заголовок ответа x-trace для кода 204 объявлен у операции');
+        (new OpenApiGenerator(translator: self::englishTranslator()))->generate(new OpenApiGeneratorConfig(projectRoot: __DIR__ . '/../..', sourcePaths: [__DIR__ . '/../Fixtures/Endpoint/DuplicateResponseHeader/Api/V1'], apiNamespace: 'GianTiaga\SpiralOpenApi\Tests\Fixtures\Endpoint\DuplicateResponseHeader\Api\V1', routePrefix: '/api/v1', outputFile: __DIR__ . '/../../runtime/openapi-DuplicateResponseHeader.yml', title: 'Headers', version: '1.0.0', responseWrapperMapping: new ResponseWrapperMapping(dataResponseClass: DataResponse::class, collectionResponseClass: CollectionResponse::class, paginationResponseClass: PaginationResponse::class, errorResponseClass: ErrorResponse::class, emptyResponseClass: EmptySuccessResponse::class)));
+    }
     public function testRequestAndResponseHeadersAreDeclaredAndRegenerate(): void
     {
         $outputFile = __DIR__ . '/../../runtime/openapi-headers.yml';

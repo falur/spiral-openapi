@@ -162,10 +162,16 @@ final readonly class SpecBuilder
         // Union (+) сохраняет числовой ключ кода ответа (200/204); spread [...$successResponses] переиндексировал бы его в 0.
         $operation['responses'] = $successResponses + $additionalResponses + $errorResponses + ['default' => $errorResponse];
         $responseHeaders = [];
+        $responseHeaderNames = [];
         foreach ($methodMetadata->responseHeaders as $header) {
             if (!isset($operation['responses'][$header->status])) {
                 throw new OpenApiGenerationException(\sprintf('Для заголовка %s не объявлен ответ %d.', $header->name, $header->status));
             }
+            $normalizedName = \strtolower($header->name);
+            if (isset($responseHeaderNames[$header->status][$normalizedName])) {
+                throw new OpenApiGenerationException(\sprintf('Заголовок ответа %s для кода %d объявлен у операции %s::%s дважды.', $header->name, $header->status, $classMetadata->className, $methodMetadata->name));
+            }
+            $responseHeaderNames[$header->status][$normalizedName] = true;
             $schema = ['type' => 'string'];
             if ($header->value !== null) {
                 $schema['enum'] = [$header->value];
